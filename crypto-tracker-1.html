@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>⚡ Nero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg0:     #080b10;
+      --bg1:     #0d1117;
+      --bg2:     #131921;
+      --bg3:     #1a2332;
+      --border:  #1e2d42;
+      --green:   #00ff88;
+      --red:     #ff3d5a;
+      --cyan:    #00d4ff;
+      --gold:    #ffd700;
+      --muted:   #4a6080;
+      --text:    #c8d8e8;
+      --bright:  #eaf2ff;
+    }
+
+    body {
+      background: var(--bg0);
+      font-family: 'Barlow', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    /* scanline overlay */
+    body::before {
+      content:'';
+      position:fixed;inset:0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,212,255,0.012) 2px,
+        rgba(0,212,255,0.012) 4px
+      );
+      pointer-events:none;
+      z-index:999;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-shadow: 0 0 20px rgba(0,212,255,0.5);
+    }
+    .logo span { color: var(--green); }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--green);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: blink 1.2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    .clock {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .refresh-info {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    /* ── MARKET BAR ── */
+    .market-bar {
+      background: var(--bg1);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 28px;
+      display: flex;
+      gap: 28px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .market-bar::-webkit-scrollbar { display: none; }
+    .market-stat {
+      display: flex;
+      gap: 8px;
+      white-space: nowrap;
+      font-size: 0.75rem;
+      align-items: center;
+    }
+    .market-stat .ms-label { color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+    .market-stat .ms-val   { font-family: 'Share Tech Mono', monospace; color: var(--bright); }
+
+    /* ── MAIN ── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 28px 20px;
+    }
+
+    .section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── TOP 3 FEATURED ── */
+    .featured-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .featured-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .featured-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--cyan);
+    }
+    .featured-card::after {
+      content:'';
+      position:absolute;
+      top:0;left:0;right:0;
+      height:2px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .featured-card:hover::after { opacity: 1; }
+
+    .fc-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    .fc-coin {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .fc-icon {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--bg3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    .fc-name { font-weight: 700; font-size: 1rem; color: var(--bright); }
+    .fc-sym  { font-size: 0.72rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+
+    .fc-rank {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 8px;
+    }
+
+    .fc-price {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.7rem;
+      font-weight: 400;
+      color: var(--bright);
+      margin-bottom: 8px;
+      transition: color 0.3s;
+    }
+    .fc-price.flash-up   { color: var(--green); }
+    .fc-price.flash-down { color: var(--red); }
+
+    .fc-change {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.82rem;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .fc-change.up   { background: rgba(0,255,136,0.1); color: var(--green); }
+    .fc-change.down { background: rgba(255,61,90,0.1);  color: var(--red); }
+
+    .fc-mcap {
+      margin-top: 12px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    .fc-mcap span { color: var(--text); font-family: 'Share Tech Mono', monospace; }
+
+    /* ── COIN TABLE ── */
+    .table-wrap {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      padding: 12px 16px;
+      font-size: 0.65rem;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      text-align: right;
+      white-space: nowrap;
+      font-family: 'Barlow Condensed', sans-serif;
+    }
+    th:first-child, th:nth-child(2) { text-align: left; }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(30,45,66,0.6);
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg2); }
+
+    td {
+      padding: 14px 16px;
+      font-size: 0.85rem;
+      text-align: right;
+      font-family: 'Share Tech Mono', monospace;
+      white-space: nowrap;
+    }
+    td:first-child { text-align: left; color: var(--muted); font-size: 0.75rem; }
+    td:nth-child(2){ text-align: left; }
+
+    .td-coin {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .td-icon { font-size: 1.1rem; }
+    .td-name { font-family: 'Barlow', sans-serif; font-weight: 600; color: var(--bright); font-size: 0.88rem; }
+    .td-sym  { font-size: 0.68rem; color: var(--muted); letter-spacing: 2px; font-family: 'Share Tech Mono', monospace; }
+
+    .td-price { color: var(--bright); }
+    .td-price.flash-up   { color: var(--green); transition: color 0s; }
+    .td-price.flash-down { color: var(--red);   transition: color 0s; }
+
+    .chg {
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: inline-block;
+      min-width: 70px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      text-align: center;
+    }
+    .chg.up   { background: rgba(0,255,136,0.1); color: var(--green); }
+    .chg.down { background: rgba(255,61,90,0.1);  color: var(--red); }
+
+    /* ── SPARKLINE (mini bar) ── */
+    .spark {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 24px;
+    }
+    .spark-bar {
+      width: 4px;
+      border-radius: 2px 2px 0 0;
+      background: var(--muted);
+      transition: height 0.4s;
+    }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      margin-top: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: 'Share Tech Mono', monospace;
+      letter-spacing: 1px;
+      padding: 0 4px;
+    }
+    .status-bar .upd { color: var(--green); }
+
+    /* ── LOADING ── */
+    .loading-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 20px;
+    }
+    .loading-text {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--cyan);
+      letter-spacing: 3px;
+      animation: pulse 1s ease-in-out infinite alternate;
+    }
+    @keyframes pulse { from{opacity:0.4} to{opacity:1} }
+    .loading-bar {
+      width: 200px; height: 2px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .loading-fill {
+      height: 100%;
+      background: var(--cyan);
+      border-radius: 2px;
+      animation: load 1.5s ease-in-out infinite;
+    }
+    @keyframes load { 0%{width:0;margin-left:0} 50%{width:100%;margin-left:0} 100%{width:0;margin-left:100%} }
+
+    /* ── ERROR ── */
+    .error-msg {
+      text-align: center;
+      padding: 40px;
+      color: var(--red);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+    }
+
+    @media(max-width:700px){
+      .featured-grid { grid-template-columns: 1fr; }
+      .hide-mobile { display: none; }
+      header { padding: 12px 16px; }
+      main { padding: 16px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Nero</div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div> Live</div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="refresh-info" id="refreshInfo">Updating…</div>
+  </div>
+</header>
+
+<div class="market-bar" id="marketBar">
+  <div class="market-stat"><span class="ms-label">Market Cap</span><span class="ms-val" id="mktCap">—</span></div>
+  <div class="market-stat"><span class="ms-label">24h Vol</span><span class="ms-val" id="mktVol">—</span></div>
+  <div class="market-stat"><span class="ms-label">BTC Dom</span><span class="ms-val" id="btcDom">—</span></div>
+  <div class="market-stat"><span class="ms-label">Active Coins</span><span class="ms-val" id="activeCoins">—</span></div>
+  <div class="market-stat"><span class="ms-label">Markets</span><span class="ms-val" id="markets">—</span></div>
+</div>
+
+<main>
+  <div id="app">
+    <div class="loading-screen">
+      <div class="loading-text">FETCHING LIVE DATA…</div>
+      <div class="loading-bar"><div class="loading-fill"></div></div>
+    </div>
+  </div>
+  <div class="status-bar">
+    <span>Source: CoinGecko API · Free tier</span>
+    <span class="upd" id="lastUpd">—</span>
+  </div>
+</main>
+
+<script>
+/* ── CONFIG ── */
+const COINS = [
+  { id:'bitcoin',        sym:'BTC', name:'Bitcoin',      icon:'₿' },
+  { id:'ethereum',       sym:'ETH', name:'Ethereum',     icon:'Ξ' },
+  { id:'binancecoin',    sym:'BNB', name:'BNB',          icon:'◈' },
+  { id:'solana',         sym:'SOL', name:'Solana',       icon:'◎' },
+  { id:'ripple',         sym:'XRP', name:'XRP',          icon:'✕' },
+  { id:'cardano',        sym:'ADA', name:'Cardano',      icon:'₳' },
+  { id:'dogecoin',       sym:'DOGE',name:'Dogecoin',     icon:'Ð' },
+  { id:'avalanche-2',    sym:'AVAX',name:'Avalanche',    icon:'▲' },
+  { id:'chainlink',      sym:'LINK',name:'Chainlink',    icon:'⬡' },
+  { id:'polkadot',       sym:'DOT', name:'Polkadot',     icon:'●' },
+  { id:'toncoin',        sym:'TON', name:'Toncoin',      icon:'◆' },
+  { id:'shiba-inu',      sym:'SHIB',name:'Shiba Inu',    icon:'🐕' },
+];
+
+const FEATURED = ['bitcoin','ethereum','solana'];
+const REFRESH_MS = 30000; // 30 seconds (CoinGecko free tier friendly)
+
+/* ── STATE ── */
+let prevPrices = {};
+let countdown  = REFRESH_MS / 1000;
+let globalData = null;
+
+/* ── UTILS ── */
+const fmt = (n, dec=2) => n == null ? '—' :
+  new Intl.NumberFormat('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}).format(n);
+
+const fmtPrice = n => {
+  if (n == null) return '—';
+  if (n >= 1000)  return '$' + fmt(n, 2);
+  if (n >= 1)     return '$' + fmt(n, 4);
+  if (n >= 0.01)  return '$' + fmt(n, 5);
+  return '$' + n.toFixed(8);
+};
+
+const fmtBig = n => {
+  if (n == null) return '—';
+  if (n >= 1e12) return '$' + (n/1e12).toFixed(2) + 'T';
+  if (n >= 1e9)  return '$' + (n/1e9).toFixed(2)  + 'B';
+  if (n >= 1e6)  return '$' + (n/1e6).toFixed(2)  + 'M';
+  return '$' + fmt(n);
+};
+
+const chgClass  = v => v >= 0 ? 'up' : 'down';
+const chgArrow  = v => v >= 0 ? '▲' : '▼';
+const chgColor  = v => v >= 0 ? '#00ff88' : '#ff3d5a';
+
+/* ── CLOCK ── */
+function tickClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('en-US',{hour12:false});
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+/* ── COUNTDOWN ── */
+function tickCountdown() {
+  countdown--;
+  if (countdown <= 0) countdown = REFRESH_MS / 1000;
+  document.getElementById('refreshInfo').textContent =
+    `Next update in ${countdown}s`;
+}
+setInterval(tickCountdown, 1000);
+
+/* ── SPARKLINE ── */
+function sparkline(coin, isUp) {
+  // generate a plausible mini chart from 24h change direction
+  const bars = 8;
+  const color = isUp ? '#00ff88' : '#ff3d5a';
+  let html = '<div class="spark">';
+  for (let i = 0; i < bars; i++) {
+    const h = 4 + Math.random() * 16;
+    const bg = i === bars - 1 ? color : 'rgba(74,96,128,0.5)';
+    html += '<div class="spark-bar" style="height:' + h + 'px;background:' + bg + '"></div>';
+  }
+  return html + '</div>';
+}
+
+/* ── FETCH GLOBAL MARKET ── */
+async function fetchGlobal() {
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/global');
+    if (!r.ok) return;
+    const d = (await r.json()).data;
+    document.getElementById('mktCap').textContent =
+      '$' + (d.total_market_cap.usd/1e12).toFixed(2) + 'T';
+    document.getElementById('mktVol').textContent =
+      '$' + (d.total_volume.usd/1e9).toFixed(1) + 'B';
+    document.getElementById('btcDom').textContent =
+      d.market_cap_percentage.btc.toFixed(1) + '%';
+    document.getElementById('activeCoins').textContent =
+      d.active_cryptocurrencies.toLocaleString();
+    document.getElementById('markets').textContent =
+      d.markets.toLocaleString();
+  } catch(e) {}
+}
+
+/* ── FETCH PRICES ── */
+async function fetchPrices() {
+  const ids = COINS.map(c=>c.id).join(',');
+  const url  = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=20&page=1&sparkline=false&price_change_percentage=1h,24h,7d`;
+  const r    = await fetch(url);
+  if (!r.ok) throw new Error('API error ' + r.status);
+  return await r.json();
+}
+
+/* ── RENDER ── */
+function render(data) {
+  const map = {};
+  data.forEach(c => map[c.id] = c);
+
+  // enrich with icon/sym from our config
+  COINS.forEach(cfg => {
+    if (map[cfg.id]) {
+      map[cfg.id]._icon = cfg.icon;
+      map[cfg.id]._sym  = cfg.sym;
+    }
+  });
+
+  const featured = FEATURED.map(id => map[id]).filter(Boolean);
+  const allCoins = data.filter(c => map[c.id]);
+
+  /* featured cards */
+  let fHTML = '';
+  featured.forEach((c, i) => {
+    const chg = c.price_change_percentage_24h;
+    const isUp = chg >= 0;
+    const prev = prevPrices[c.id];
+    const flashCls = prev == null ? '' : (c.current_price > prev ? 'flash-up' : c.current_price < prev ? 'flash-down' : '');
+
+    fHTML += `
+    <div class="featured-card">
+      <div class="fc-top">
+        <div class="fc-coin">
+          <div class="fc-icon">${c._icon}</div>
+          <div>
+            <div class="fc-name">${c.name}</div>
+            <div class="fc-sym">${c._sym}</div>
+          </div>
+        </div>
+        <div class="fc-rank">#${c.market_cap_rank}</div>
+      </div>
+      <div class="fc-price ${flashCls}" id="fp-${c.id}">${fmtPrice(c.current_price)}</div>
+      <div class="fc-change ${chgClass(chg)}">
+        ${chgArrow(chg)} ${Math.abs(chg).toFixed(2)}%
+      </div>
+      <div class="fc-mcap">
+        <span>Mkt Cap</span><span>${fmtBig(c.market_cap)}</span>
+      </div>
+      <div class="fc-mcap">
+        <span>24h Vol</span><span>${fmtBig(c.total_volume)}</span>
+      </div>
+    </div>`;
+  });
+
+  /* table rows */
+  let tRows = '';
+  allCoins.forEach((c, i) => {
+    const chg24 = c.price_change_percentage_24h;
+    const chg1h = c.price_change_percentage_1h_in_currency;
+    const chg7d = c.price_change_percentage_7d_in_currency;
+    const isUp  = chg24 >= 0;
+    const prev  = prevPrices[c.id];
+    const flashCls = prev == null ? '' : (c.current_price > prev ? 'flash-up' : c.current_price < prev ? 'flash-down' : '');
+
+    tRows += `
+    <tr>
+      <td>${c.market_cap_rank}</td>
+      <td>
+        <div class="td-coin">
+          <div class="td-icon">${c._icon ?? '●'}</div>
+          <div>
+            <div class="td-name">${c.name}</div>
+            <div class="td-sym">${c._sym ?? c.symbol.toUpperCase()}</div>
+          </div>
+        </div>
+      </td>
+      <td class="td-price ${flashCls}" id="tp-${c.id}">${fmtPrice(c.current_price)}</td>
+      <td><span class="chg ${chgClass(chg1h)}">${chgArrow(chg1h)} ${Math.abs(chg1h??0).toFixed(2)}%</span></td>
+      <td><span class="chg ${chgClass(chg24)}">${chgArrow(chg24)} ${Math.abs(chg24??0).toFixed(2)}%</span></td>
+      <td class="hide-mobile"><span class="chg ${chgClass(chg7d)}">${chgArrow(chg7d)} ${Math.abs(chg7d??0).toFixed(2)}%</span></td>
+      <td class="hide-mobile">${fmtBig(c.market_cap)}</td>
+      <td class="hide-mobile">${fmtBig(c.total_volume)}</td>
+      <td class="hide-mobile">${sparkline(c, isUp)}</td>
+    </tr>`;
+  });
+
+  document.getElementById('app').innerHTML = `
+    <div class="section-title">Featured Assets</div>
+    <div class="featured-grid">${fHTML}</div>
+
+    <div class="section-title">All Markets</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Asset</th>
+            <th>Price</th>
+            <th>1h %</th>
+            <th>24h %</th>
+            <th class="hide-mobile">7d %</th>
+            <th class="hide-mobile">Market Cap</th>
+            <th class="hide-mobile">Volume 24h</th>
+            <th class="hide-mobile">Trend</th>
+          </tr>
+        </thead>
+        <tbody>${tRows}</tbody>
+      </table>
+    </div>`;
+
+  // save previous prices for flash effect
+  data.forEach(c => prevPrices[c.id] = c.current_price);
+
+  // remove flash classes after 600ms
+  setTimeout(() => {
+    document.querySelectorAll('.flash-up, .flash-down').forEach(el => {
+      el.classList.remove('flash-up','flash-down');
+    });
+  }, 600);
+
+  document.getElementById('lastUpd').textContent =
+    'Last updated: ' + new Date().toLocaleTimeString();
+
+  countdown = REFRESH_MS / 1000;
+}
+
+/* ── MAIN LOOP ── */
+async function refresh() {
+  try {
+    const data = await fetchPrices();
+    render(data);
+  } catch(e) {
+    if (!document.getElementById('featured-grid')) {
+      document.getElementById('app').innerHTML = `
+        <div class="error-msg">
+          ⚠ FAILED TO FETCH DATA<br><br>
+          <span style="color:#4a6080;font-size:0.75rem">CoinGecko free API has rate limits.<br>Wait 60s and refresh the page.</span>
+        </div>`;
+    }
+    console.error(e);
+  }
+}
+
+// boot
+fetchGlobal();
+refresh();
+setInterval(refresh, REFRESH_MS);
+setInterval(fetchGlobal, 120000); // global stats every 2 min
+</script>
+</body>
+</html>
